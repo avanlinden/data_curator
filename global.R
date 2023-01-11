@@ -35,6 +35,9 @@ if (is.null(client_id) || nchar(client_id) == 0) stop("oauth_config.yml is missi
 if (is.null(client_secret) || nchar(client_secret) == 0) stop("oauth_config.yml is missing CLIENT_SECRET")
 if (is.null(app_url) || nchar(app_url) == 0) stop("oauth_config.yml is missing APP_URL")
 
+schematic_config <- yaml.load_file("schematic_config.yml")
+manfiest_basename <- schematic_config$synapse$manifest_basename
+
 # update port if running app locally
 if (interactive()) {
   port <- httr::parse_url(app_url)$port
