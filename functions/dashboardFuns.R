@@ -93,50 +93,53 @@ validate_metadata <- function(metadata, project.scope) {
   if (nrow(metadata) == 0) {
     return(metadata)
   }
-
-  parallel::mclapply(1:nrow(metadata), function(i) {
+  lapply(1:nrow(metadata), function(i) {
     manifest <- metadata[i, ]
+    
+    validation_res <- tryCatch(
+      metadata_model$validateModelManifest(
+        manifestPath = manifest$Path,
+        rootNode = manifest$Component,
+        restrict_rules = TRUE, # set true to disable great expectation
+        project_scope = project.scope
+      ),
+      # for invalid components, it will return NULL and relay as 'Out of Date', e.g.:
+      # "LungCancerTier3", "BreastCancerTier3", "ScRNA-seqAssay", "MolecularTest", "NaN", "" ...
+      error = function(e) {
+        warning("'validateModelManifest' failed: ", sQuote(manifest$SynapseID), ":\n", e$message)
+        return(NULL)
+      }
+    )
+    # clean validation res from schematicpy
+    clean_res <- validationResult(validation_res, manifest$Component, dashboard = TRUE)
+    
+    res <- data.frame(
+      Result = clean_res$result,
+      # change wrong schema to out-of-date type
+      ErrorType = if_else(clean_res$error_type == "Wrong Schema", "Out of Date", clean_res$error_type),
+      errorMsg = if_else(is.null(clean_res$error_msg[1]), "Valid", clean_res$error_msg[1]),
+      WarnMsg = if_else(length(clean_res$warning_msg) == 0, "Valid", paste(clean_res$warning_msg, collapse="\n"))
+    )
     if (is.na(manifest$Component)) {
-      data.frame(
+      res <- data.frame(
         Result = "invalid",
         ErrorType = "Out of Date",
         errorMsg = "No manifest found",
         WarnMsg = "No manifest found"
       )
-    } else if (manifest$Component == "Unknown") {
-      data.frame(
+    }
+    if (manifest$Component == "Unknown") {
+      res <- data.frame(
         Result = "invalid",
         ErrorType = "Out of Date",
         errorMsg = "'Component' is missing",
         WarnMsg = "'Component' is missing"
       )
-    } else {
-      validation_res <- tryCatch(
-        metadata_model$validateModelManifest(
-          manifestPath = manifest$Path,
-          rootNode = manifest$Component,
-          restrict_rules = TRUE, # set true to disable great expectation
-          project_scope = project.scope
-        ),
-        # for invalid components, it will return NULL and relay as 'Out of Date', e.g.:
-        # "LungCancerTier3", "BreastCancerTier3", "ScRNA-seqAssay", "MolecularTest", "NaN", "" ...
-        error = function(e) {
-          warning("'validateModelManifest' failed: ", sQuote(manifest$SynapseID), ":\n", e$message)
-          return(NULL)
-        }
-      )
-      # clean validation res from schematicpy
-      clean_res <- validationResult(validation_res, manifest$Component, dashboard = TRUE)
-
-      data.frame(
-        Result = clean_res$result,
-        # change wrong schema to out-of-date type
-        ErrorType = if_else(clean_res$error_type == "Wrong Schema", "Out of Date", clean_res$error_type),
-        errorMsg = if_else(is.null(clean_res$error_msg[1]), "Valid", clean_res$error_msg[1]),
-        WarnMsg = if_else(length(clean_res$warning_msg) == 0, "Valid", clean_res$warning_msg)
-      )
     }
-  }, mc.cores = ncores) %>%
+    
+    res
+    
+  }) %>%
     bind_rows() %>%
     cbind(metadata, .) # expand metadata with validation results
 }
