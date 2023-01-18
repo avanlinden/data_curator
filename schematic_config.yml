@@ -1,9 +1,4 @@
 # Do not change the 'definitions' section unless you know what you're doing
-schematic:
-  branch: 'empty'
-  sha: 'empty'
-  release_version: 'empty'
-
 definitions:
   synapse_config: '.synapseConfig'
   creds_path: 'credentials.json'
@@ -11,7 +6,7 @@ definitions:
   service_acct_creds: 'schematic_service_account_creds.json'
 
 synapse:
-  master_fileview: 'syn33715412'
+  master_fileview: 'syn20446927'
   manifest_folder: 'manifests'
   manifest_basename: 'synapse_storage_manifest'
   token_creds: 'syn23643259'
@@ -27,10 +22,11 @@ manifest:
 
 model:
   input:
-    # if both 'download_url' and 'repo' present, `repo` will be used
-    download_url: 'https://raw.githubusercontent.com/Sage-Bionetworks/data-models/main/example.model.jsonld' # url to download JSON-LD data model
-    repo: 'Sage-Bionetworks/data-models' # data model repo url (<repo-owner>/<repo-name>/<version/branch>), version or branch is optional
-    location: 'data-models/example.model.jsonld' # path to JSON-LD file
+    # Uncomment line below for staging
+    download_url: 'https://raw.githubusercontent.com/ncihtan/data-models/main/HTAN.model.jsonld'
+    # Update line below for prod
+    #download_url: 'https://raw.githubusercontent.com/ncihtan/data-models/v22.12.1/HTAN.model.jsonld'
+    location: 'data-models/HTAN.model.jsonld'
     file_type: 'local'
 
 style:
